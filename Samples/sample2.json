@@ -1,0 +1,26 @@
+{
+  "components": [
+    {
+      "id": 1,
+      "name": "frontendService"
+    },
+    {
+      "id": 2,
+      "name": "paymentService"
+    } 
+  ],
+  "communications": [
+    {
+      "source": null,
+      "destination": 1
+    },
+    {
+      "source": 1,
+      "destination": 2
+    },
+    {
+      "source": 2,
+      "destination": 1
+    }
+  ]
+}

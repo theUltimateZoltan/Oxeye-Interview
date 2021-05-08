@@ -1,0 +1,14 @@
+{
+  "components": [
+    {
+      "id": 1,
+      "name": "frontendService"
+    }
+  ],
+  "communications": [
+    {
+      "source": null,
+      "destination": 1
+    }
+  ]
+}
