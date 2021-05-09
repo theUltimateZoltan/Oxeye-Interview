@@ -14,7 +14,7 @@ def do_get():
     if "component" not in request.args:
         return "Usage error: please specify 'component={componentId}'", 400
     try:
-        flow = get_flow(request.args.get("component"))
+        flow = get_flow(int(request.args.get("component")))
     except ComponentNotFoundError:
         return "Component not found.", 404
     except NoPathToComponentError:
@@ -27,8 +27,12 @@ def do_get():
 def do_post_component():
     if "name" not in request.args:
         return "Usage error: please specify name={componentName} in request args.", 400
-    cid = add_component(request.args.get("name"))
-    return jsonify({"result": "success", "componentId": cid})
+    try:
+        cid = add_component(request.args.get("name"))
+    except:
+        return jsonify({"result": "Internal server error"}), 500
+    else:
+        return jsonify({"result": "success", "componentId": cid})
 
 
 @app.route("/communication", methods=["POST"])
@@ -37,11 +41,13 @@ def do_post_communication():
         return "Usage error: please specify source={id} and destination={id}.", 400
     try:
         if "source" in request.args:
-            add_communication(request.args.get("source"), request.args.get("destination"))
+            add_communication(int(request.args.get("source")), int(request.args.get("destination")))
         else:
-            add_communication(None, request.args.get("destination"))
+            add_communication(None, int(request.args.get("destination")))
     except ComponentNotFoundError:
-        return jsonify(result="failed")
+        return jsonify(result="failed: component not found")
+    except:
+        return jsonify({"result": "Internal server error"}), 500
     else:
         return jsonify(result="success")
 

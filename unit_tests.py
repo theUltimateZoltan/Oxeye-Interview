@@ -66,29 +66,48 @@ class TestAppLogic(unittest.TestCase):
 
 
 class TestServer(unittest.TestCase):
-    def test_get_path(self):
-        pass
 
     def test_post_component(self):
-        pass
+        cids = list()
+        order_size = 10
+        for comp in [f"comp{i}" for i in range(order_size)]:
+            response = requests.post(host + ":" + str(port) + "/component", params={"name": comp})
+            response_obj = json.loads(response.content)
+            self.assertEqual(200, response.status_code)
+            self.assertEqual("success", response_obj["result"])
+            cids.append(response_obj["componentId"])
+        self.assertEqual(order_size, len(set(cids)))
 
-    def test_post_connection(self):
-        pass
-
-    def test_end_to_end(self):
+    def test_post_communication(self):
         cids = list()
         for comp in ["comp1", "comp2"]:
-            response = requests.post(host+":"+str(port)+"/component", params={"name": comp})
+            response = requests.post(host + ":" + str(port) + "/component", params={"name": comp})
             response_obj = json.loads(response.content)
-            self.assertEqual(response.status_code, 200)
-            self.assertEqual(response_obj["result"], "success")
             cids.append(response_obj["componentId"])
-        for conn in [(None, cids[0]), (cids[0], cids[1])]:
+        for conn in [(cids[0], cids[1]), (None, cids[0])]:
             response = requests.post(host+":"+str(port)+"/communication",
                                      params={"source": conn[0], "destination": conn[1]})
             self.assertEqual(response.status_code, 200)
             response_obj = json.loads(response.content)
-            self.assertEqual(response_obj["result"], "success")
+            self.assertEqual("success", response_obj["result"])
+
+    def test_end_to_end(self):
+        cids = list()
+        # post components
+        for comp in ["comp1", "comp2"]:
+            response = requests.post(host+":"+str(port)+"/component", params={"name": comp})
+            response_obj = json.loads(response.content)
+            self.assertEqual(response.status_code, 200)
+            self.assertEqual(response_obj["result"], "success", "Error in component post")
+            cids.append(response_obj["componentId"])
+        # post communications
+        for conn in [(cids[0], cids[1]), (None, cids[0])]:
+            response = requests.post(host+":"+str(port)+"/communication",
+                                     params={"source": conn[0], "destination": conn[1]})
+            self.assertEqual(response.status_code, 200)
+            response_obj = json.loads(response.content)
+            self.assertEqual(response_obj["result"], "success", "Error in communications post")
+        # get flow
         response = requests.get(host+":"+str(port)+"/flow", params={"component": cids[1]})
         self.assertEqual(response.status_code, 200)
         response_obj = json.loads(response.content)
