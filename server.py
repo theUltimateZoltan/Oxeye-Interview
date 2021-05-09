@@ -1,10 +1,11 @@
 from flask import Flask, request, jsonify
 import logging
-from applogic import get_flow, add_communication, add_component
+from applogic import AppLogic
 from analyzer import ComponentNotFoundError, NoPathToComponentError
 
 app = Flask(__name__)
 logger = logging.getLogger(__name__)
+applogic = AppLogic()
 port = 8000
 host = "127.0.0.1"
 
@@ -14,7 +15,7 @@ def do_get():
     if "component" not in request.args:
         return "Usage error: please specify 'component={componentId}'", 400
     try:
-        flow = get_flow(int(request.args.get("component")))
+        flow = applogic.get_flow(int(request.args.get("component")))
     except ComponentNotFoundError:
         return "Component not found.", 404
     except NoPathToComponentError:
@@ -28,7 +29,7 @@ def do_post_component():
     if "name" not in request.args:
         return "Usage error: please specify name={componentName} in request args.", 400
     try:
-        cid = add_component(request.args.get("name"))
+        cid = applogic.add_component(request.args.get("name"))
     except:
         return jsonify({"result": "Internal server error"}), 500
     else:
@@ -41,9 +42,9 @@ def do_post_communication():
         return "Usage error: please specify source={id} and destination={id}.", 400
     try:
         if "source" in request.args:
-            add_communication(int(request.args.get("source")), int(request.args.get("destination")))
+            applogic.add_communication(int(request.args.get("source")), int(request.args.get("destination")))
         else:
-            add_communication(None, int(request.args.get("destination")))
+            applogic.add_communication(None, int(request.args.get("destination")))
     except ComponentNotFoundError:
         return jsonify(result="failed: component not found")
     except:

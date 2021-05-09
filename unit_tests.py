@@ -1,6 +1,6 @@
 import unittest
-from applogic import *
-from server import *
+from analyzer import Component, Analyzer, NoPathToComponentError
+from applogic import AppLogic
 import requests
 import json
 
@@ -54,12 +54,13 @@ class TestAnalyzer(unittest.TestCase):
 
 class TestAppLogic(unittest.TestCase):
     def test_end_to_end(self):
+        al = AppLogic()
         cids = list()
         for comp in ["comp1", "comp2", "comp3"]:
-            cids.append(add_component(comp))
+            cids.append(al.add_component(comp))
         for conn in [(None, cids[0]), (cids[0], cids[1]), (cids[1], cids[2])]:
-            add_communication(conn[0], conn[1])
-        path = get_flow(cids[2])
+            al.add_communication(conn[0], conn[1])
+        path = al.get_flow(cids[2])
         self.assertEqual(path[0], cids[0])
         self.assertEqual(path[1], cids[1])
         self.assertEqual(path[2], cids[2])

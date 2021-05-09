@@ -64,7 +64,3 @@ class ComponentNotFoundError(Exception):
 
 class NoPathToComponentError(Exception):
     pass
-
-
-class MissingArgumentsError(Exception):
-    pass
