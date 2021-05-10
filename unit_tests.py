@@ -4,8 +4,29 @@ from applogic import AppLogic
 import requests
 import json
 
-host = "http://127.0.0.1"
-port = 8000
+
+class MockUser:
+    def __init__(self):
+        self.host = "http://127.0.0.1"
+        self.port = 8000
+
+    def post(self, route, **kwargs):
+        return requests.post(f"{self.host}:{self.port}/{route}", params=kwargs)
+
+    def get(self, route, **kwargs):
+        return requests.get(f"{self.host}:{self.port}/{route}", params=kwargs)
+
+    def post_component(self, cname):
+        return self.post("component", name=cname)
+
+    def post_communication(self, src, dest):
+        return self.post("communication", source=src, destination=dest)
+
+    def get_flow(self, cid):
+        return self.get("flow", component=cid)
+
+
+user = MockUser()
 
 
 class TestAnalyzer(unittest.TestCase):
@@ -45,7 +66,9 @@ class TestAnalyzer(unittest.TestCase):
         cids = list()
         for comp in ["test1", "test2"]:
             cids.append(a.add_component(comp))
-        for comm in [{"source": 1, "destination": 2}, {"source": 2, "destination": 1}, {"source": None, "destination": 1}]:
+        for comm in [{"source": 1, "destination": 2},
+                     {"source": 2, "destination": 1},
+                     {"source": None, "destination": 1}]:
             a.add_communication(comm.get("source"), comm.get("destination"))
         path = a.find_shortest_path_from_internet(2)
         self.assertEqual(path[0], cids[0])
@@ -72,7 +95,7 @@ class TestServer(unittest.TestCase):
         cids = list()
         order_size = 10
         for comp in [f"comp{i}" for i in range(order_size)]:
-            response = requests.post(host + ":" + str(port) + "/component", params={"name": comp})
+            response = user.post_component(comp)
             response_obj = json.loads(response.content)
             self.assertEqual(200, response.status_code)
             self.assertEqual("success", response_obj["result"])
@@ -82,12 +105,11 @@ class TestServer(unittest.TestCase):
     def test_post_communication(self):
         cids = list()
         for comp in ["comp1", "comp2"]:
-            response = requests.post(host + ":" + str(port) + "/component", params={"name": comp})
+            response = user.post_component(comp)
             response_obj = json.loads(response.content)
             cids.append(response_obj["componentId"])
         for conn in [(cids[0], cids[1]), (None, cids[0])]:
-            response = requests.post(host+":"+str(port)+"/communication",
-                                     params={"source": conn[0], "destination": conn[1]})
+            response = user.post_communication(conn[0], conn[1])
             self.assertEqual(response.status_code, 200)
             response_obj = json.loads(response.content)
             self.assertEqual("success", response_obj["result"])
@@ -96,24 +118,35 @@ class TestServer(unittest.TestCase):
         cids = list()
         # post components
         for comp in ["comp1", "comp2"]:
-            response = requests.post(host+":"+str(port)+"/component", params={"name": comp})
+            response = user.post_component(comp)
             response_obj = json.loads(response.content)
             self.assertEqual(response.status_code, 200)
             self.assertEqual(response_obj["result"], "success", "Error in component post")
             cids.append(response_obj["componentId"])
         # post communications
         for conn in [(cids[0], cids[1]), (None, cids[0])]:
-            response = requests.post(host+":"+str(port)+"/communication",
-                                     params={"source": conn[0], "destination": conn[1]})
+            response = user.post_communication(conn[0], conn[1])
             self.assertEqual(response.status_code, 200)
             response_obj = json.loads(response.content)
             self.assertEqual(response_obj["result"], "success", "Error in communications post")
         # get flow
-        response = requests.get(host+":"+str(port)+"/flow", params={"component": cids[1]})
+        response = user.get_flow(cids[1])
         self.assertEqual(response.status_code, 200)
         response_obj = json.loads(response.content)
         self.assertEqual(response_obj["internetFacing"], True)
         self.assertEqual(response_obj["flow"], [cids[0], cids[1]])
+
+
+class ServerNegativeTesting(unittest.TestCase):
+    def test_invalid_arguments(self):
+        for route in ["component", "communication"]:
+            response = user.post(route, invalid_arg="value")
+            self.assertEqual(400, response.status_code)
+        response = user.get("flow", invalid_arg="value")
+        self.assertEqual(400, response.status_code)
+
+    def test_invalid_component(self):
+        pass
 
 
 if __name__ == '__main__':

@@ -31,9 +31,9 @@ def do_post_component():
     try:
         cid = applogic.add_component(request.args.get("name"))
     except:
-        return jsonify({"result": "Internal server error"}), 500
+        return jsonify(result="Internal server error"), 500
     else:
-        return jsonify({"result": "success", "componentId": cid})
+        return jsonify(result="success", componentId=cid)
 
 
 @app.route("/communication", methods=["POST"])
@@ -48,7 +48,7 @@ def do_post_communication():
     except ComponentNotFoundError:
         return jsonify(result="failed: component not found")
     except:
-        return jsonify({"result": "Internal server error"}), 500
+        return jsonify(result="Internal server error"), 500
     else:
         return jsonify(result="success")
 
