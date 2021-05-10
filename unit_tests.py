@@ -117,7 +117,7 @@ class TestServer(unittest.TestCase):
     def test_end_to_end(self):
         cids = list()
         # post components
-        for comp in ["comp1", "comp2"]:
+        for comp in ["comp1", "comp2", "comp3"]:
             response = user.post_component(comp)
             response_obj = json.loads(response.content)
             self.assertEqual(response.status_code, 200)
@@ -129,12 +129,17 @@ class TestServer(unittest.TestCase):
             self.assertEqual(response.status_code, 200)
             response_obj = json.loads(response.content)
             self.assertEqual(response_obj["result"], "success", "Error in communications post")
-        # get flow
+        # get flow - expect true
         response = user.get_flow(cids[1])
         self.assertEqual(response.status_code, 200)
         response_obj = json.loads(response.content)
-        self.assertEqual(response_obj["internetFacing"], True)
-        self.assertEqual(response_obj["flow"], [cids[0], cids[1]])
+        self.assertEqual(True, response_obj["internetFacing"])
+        self.assertEqual([cids[0], cids[1]], response_obj["flow"])
+        # get flow - expect false
+        response = user.get_flow(cids[2])
+        response_obj = json.loads(response.content)
+        self.assertEqual(False, response_obj["internetFacing"])
+        self.assertEqual(None, response_obj["flow"])
 
 
 class ServerNegativeTesting(unittest.TestCase):
@@ -146,7 +151,14 @@ class ServerNegativeTesting(unittest.TestCase):
         self.assertEqual(400, response.status_code)
 
     def test_invalid_component(self):
-        pass
+        response = user.post_component("comp")
+        cid = json.loads(response.content)["componentId"]
+        response = user.post_communication(cid, cid+10000)
+        self.assertEqual(404, response.status_code)
+        response = user.post_communication(cid, -1)
+        self.assertEqual(404, response.status_code)
+        response = user.get_flow(-1)
+        self.assertEqual(404, response.status_code)
 
 
 if __name__ == '__main__':
